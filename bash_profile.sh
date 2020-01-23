@@ -10,7 +10,11 @@ fi
 # User specific environment and startup programs
 
 export PYTHONDONTWRITEBYTECODE=True
-export DISPLAY=
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/repos/BUILD_DIR/NETCDF/lib/
+export PYSYN_CDBS=$HOME/repos/Spectractor/tests/data
+export LIBRADTRANDIR=$HOME/repos/libRadtran-2.0.2/
+# export DISPLAY=
 
 ignoreeof=3
 
