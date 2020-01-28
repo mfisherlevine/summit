@@ -1,5 +1,7 @@
-eups distrib install -t w_2020_04 lsst_distrib
-setup lsst_distrib -t w_2020_04
+# eups distrib install -t w_2020_04 lsst_distrib
+# setup lsst_distrib -t w_2020_04
+eups distrib install -t d_2020_01_27 lsst_distrib
+setup lsst_distrib -t d_2020_01_27
 
 cd $HOME/repos
 
