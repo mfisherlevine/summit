@@ -1,4 +1,6 @@
 eups distrib install -t w_2020_04 lsst_distrib
+setup lsst_distrib -t w_2020_04
+
 cd $HOME/repos
 
 ### NetCDF
