@@ -59,7 +59,10 @@ def makeKernel():
         os.makedirs(kernelDir)
 
     textToFile(kernelFilename, KERNEL_JSON)
+    print(f"Wrote kernel file to {kernelFilename}")
+
     textToFile(launchScriptFilename, KERNEL_SCRIPT)
+    print(f"Wrote launch script to {launchScriptFilename}")
 
     os.chmod(launchScriptFilename, 0o755)
 
@@ -68,6 +71,7 @@ def makeKernel():
         os.makedirs(userConfigFileDir)
     userConfigFilename = os.path.join(userConfigFileDir, ".user_setups")
     textToFile(userConfigFilename, USER_CONFIG)
+    print(f"Wrote user config to {userConfigFilename}")
 
 
 if __name__ == '__main__':
