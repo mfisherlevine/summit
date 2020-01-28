@@ -35,6 +35,13 @@ export LIBRADTRANDIR=$HOME/repos/libRadtran-2.0.2/
 
 
 cd $HOME/repos
+git clone https://github.com/lsst/astro_metadata_translator.git
+cd astro_metadata_translator
+setup -j -r .
+scons
+
+
+cd $HOME/repos
 git clone https://github.com/lsst-dm/atmospec.git
 cd atmospec
 setup -j -r .
