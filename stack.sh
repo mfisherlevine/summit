@@ -1,6 +1,6 @@
-setup lsst_distrib -t w_2020_03
+setup lsst_distrib -t w_2020_04
 
-setup -j atmospec -r ~/repos/atmospec
-setup -j rapid_analysis -r ~/repos/rapid_analysis
-setup -j obs_base -r ~/repos/obs_base
-setup -j obs_lsst -r ~/repos/obs_lsst
+setup -j atmospec -r $HOME/repos/atmospec
+setup -j rapid_analysis -r $HOME/repos/rapid_analysis
+setup -j obs_base -r $HOME/repos/obs_base
+setup -j obs_lsst -r $HOME/repos/obs_lsst
