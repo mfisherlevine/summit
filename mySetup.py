@@ -27,9 +27,9 @@ exec /opt/lsst/software/stack/python/miniconda3-4.7.10/envs/lsst-scipipe-4d7b902
 """
 
 USER_CONFIG = """
-setup lsst_distrib -t w_2020_03
+setup lsst_distrib -t d_2020_01_27
 
-setup -j atmospec -r $HOME/repos/atmospec
+# setup -j atmospec -r $HOME/repos/atmospec
 setup -j rapid_analysis -r $HOME/repos/rapid_analysis
 setup -j obs_base -r $HOME/repos/obs_base
 setup -j obs_lsst -r $HOME/repos/obs_lsst
