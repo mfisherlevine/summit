@@ -52,7 +52,7 @@ git checkout tickets/DM-20823
 cd $HOME/repos
 git clone https://github.com/lsst-dm/Spectractor.git
 cd Spectractor
-git checkout tickets/DM-23105
+git checkout tickets/DM-23284
 pip install -r requirements.txt .
 
 
