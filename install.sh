@@ -1,7 +1,7 @@
 # eups distrib install -t w_2020_04 lsst_distrib
 # setup lsst_distrib -t w_2020_04
-eups distrib install -t d_2020_01_27 lsst_distrib
-setup lsst_distrib -t d_2020_01_27
+eups distrib install -t d_2020_02_11 lsst_distrib
+setup lsst_distrib -t d_2020_02_11
 
 cd $HOME/repos
 
@@ -83,3 +83,6 @@ git clone https://github.com/lsst/cp_pipe.git
 cd cp_pipe
 setup -j -r .
 scons
+
+cd $HOME/repos
+git clone https://github.com/mfisherlevine/summit.git
