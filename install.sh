@@ -1,3 +1,8 @@
+# eups distrib install -t w_2020_04 lsst_distrib
+# setup lsst_distrib -t w_2020_04
+eups distrib install -t d_2020_02_17 lsst_distrib
+setup lsst_distrib -t d_2020_02_17
+
 cd $HOME/repos
 
 ### NetCDF
@@ -27,6 +32,22 @@ cd ..
 
 
 export LIBRADTRANDIR=$HOME/repos/libRadtran-2.0.2/
+export LIBRADTRAN_DIR=$HOME/repos/libRadtran-2.0.2/
+
+
+cd $HOME/repos
+git clone https://github.com/lsst/astro_metadata_translator.git
+cd astro_metadata_translator
+setup -j -r .
+scons
+
+
+cd $HOME/repos
+git clone https://github.com/lsst-sitcom/rapid_analysis.git
+cd rapid_analysis
+setup -j -r .
+scons
+git checkout tickets/DM-21412
 
 
 cd $HOME/repos
@@ -40,16 +61,9 @@ git checkout tickets/DM-20823
 cd $HOME/repos
 git clone https://github.com/lsst-dm/Spectractor.git
 cd Spectractor
-git checkout tickets/DM-23105
-pip install -r requirements.txt .
-
-
-cd $HOME/repos
-git clone https://github.com/lsst-sitcom/rapid_analysis.git
-cd rapid_analysis
-setup -j -r .
-scons
-git checkout tickets/DM-21412
+git checkout tickets/DM-23284
+pip install -r requirements.txt
+pip install -e .
 
 
 cd $HOME/repos
@@ -71,3 +85,6 @@ git clone https://github.com/lsst/cp_pipe.git
 cd cp_pipe
 setup -j -r .
 scons
+
+cd $HOME/repos
+git clone https://github.com/mfisherlevine/summit.git

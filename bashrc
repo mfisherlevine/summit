@@ -16,11 +16,13 @@ export PYSYN_CDBS=$HOME/repos/Spectractor/tests/data
 export LIBRADTRANDIR=$HOME/repos/libRadtran-2.0.2/
 # export DISPLAY=
 
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export PATH
+
 ignoreeof=3
 
 alias eupss="eups list -s | cut -f-1"
 alias eups_local="eups list -s | cut -f-1 | grep LOCAL"
-alias eups_local="packageStatus"
 alias count="ls -1 | wc -l"
 alias count_all="find -maxdepth 1 -type d | while read -r dir; do printf "%s:\t" "$dir"; find "$dir" -type f | wc -l; done"
 alias gs="git status"
