@@ -76,6 +76,7 @@ scons
 cd $HOME/repos
 git clone https://github.com/lsst/obs_lsst.git
 cd obs_lsst
+git checkout u/mfl/feb2020_observing
 setup -j -r .
 scons
 
@@ -87,4 +88,5 @@ setup -j -r .
 scons
 
 cd $HOME/repos
-git clone https://github.com/mfisherlevine/summit.git
+cd summit
+python mySetup.py
