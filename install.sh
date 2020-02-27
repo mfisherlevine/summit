@@ -1,5 +1,3 @@
-# eups distrib install -t w_2020_04 lsst_distrib
-# setup lsst_distrib -t w_2020_04
 source /opt/lsst/software/stack/loadLSST.bash
 
 eups distrib install -t d_2020_02_17 lsst_distrib
