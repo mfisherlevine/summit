@@ -4,17 +4,6 @@ source /opt/lsst/software/stack/loadLSST.bash
 setup lsst_distrib -t w_2021_02
 
 cd $HOME/repos
-
-
-cd $HOME/repos
-git clone https://github.com/lsst-sitcom/rapid_analysis.git
-cd rapid_analysis
-setup -j -r .
-scons
-git checkout tickets/DM-21412
-
-
-cd $HOME/repos
 git clone https://github.com/lsst-dm/Spectractor.git
 cd Spectractor
 pip install -r requirements.txt
@@ -29,8 +18,17 @@ scons
 
 
 cd $HOME/repos
+git clone https://github.com/lsst-sitcom/rapid_analysis.git
+cd rapid_analysis
+setup -j -r .
+scons
+git checkout tickets/DM-21412
+
+
+cd $HOME/repos
 git clone https://github.com/lsst/obs_base.git
 cd obs_base
+git checkout e9a044d8157728fd960c9d36e609540fc30973a4
 setup -j -r .
 scons
 
