@@ -35,7 +35,7 @@ scons
 
 cd $HOME/repos
 git clone https://github.com/lsst/pipe_tasks.git
-cd obs_base
+cd pipe_tasks
 git checkout u/mfl/DM-27652-w_02_rebase
 setup -j -r .
 scons
