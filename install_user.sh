@@ -14,6 +14,7 @@ cd $HOME/repos
 git clone https://github.com/lsst-dm/atmospec.git
 cd atmospec
 setup -j -r .
+git checkout tickets/DM-26719
 scons
 
 
