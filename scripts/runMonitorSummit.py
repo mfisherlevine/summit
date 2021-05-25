@@ -21,7 +21,9 @@
 
 import os
 import numpy as np
-from multiprocessing import Pool
+from time import sleep
+from pathlib import Path
+from google.cloud import storage
 
 import lsst.daf.persistence as dafPersist
 import lsst.afw.display as afwDisplay
@@ -30,9 +32,7 @@ from lsst.pex.exceptions import NotFoundError
 from lsst.rapid.analysis.bestEffort import BestEffortIsr
 from lsst.rapid.analysis.imageExaminer import ImageExaminer
 from lsst.rapid.analysis.summarizeImage import SummarizeImage
-from lsst.rapid.analysis.utils import isExpDispersed
-
-from time import sleep
+from lsst.atmospec.utils import isDispersedExp
 
 # TODO: maybe add option to create display and return URL?
 
@@ -57,18 +57,13 @@ def _imExamine(exp, dataId, outputRoot):
     return filename
 
 
-def _sendFile(filename, rsyncDestination):
-    args = f'rsync {filename} {rsyncDestination}'
-    os.system(args)
-
-
-def runImExam(exp, dataId, outputRoot, rsyncDestination):
+def runImExam(exp, dataId, outputRoot):
     try:
         writtenFile = _imExamine(exp, dataId, outputRoot)
-        fullRsyncDest = f"{rsyncDestination}/imExam/"
-        _sendFile(writtenFile, fullRsyncDest)
+        return writtenFile
     except Exception as e:
         print(f"Skipped imExam on {dataId} because {e}")
+        return None
 
 
 def _spectrumSummarize(exp, dataId, outputRoot):
@@ -81,18 +76,20 @@ def _spectrumSummarize(exp, dataId, outputRoot):
     return filename
 
 
-def runSpectrumSummary(exp, dataId, outputRoot, rsyncDestination):
+def runSpectrumSummary(exp, dataId, outputRoot):
     try:
         writtenFile = _spectrumSummarize(exp, dataId, outputRoot)
-        fullRsyncDest = f"{rsyncDestination}/spectrumSummaries/"
-        _sendFile(writtenFile, fullRsyncDest)
+        return writtenFile
     except Exception as e:
         print(f"Skipped imExam on {dataId} because {e}")
+        return None
 
 
 class Monitor():
     cadence = 1  # in seconds
     runIsr = True
+    client = storage.Client()
+    bucket = client.get_bucket('rubintv_data')
 
     def __init__(self, repoDir, fireflyDisplay, doWriteImExams=False,
                  imExamOutputPath='',
@@ -111,6 +108,16 @@ class Monitor():
             assert imExamOutputPath != '', "Must provide output path when writing imExams"
         self.imExamOutputPath = imExamOutputPath
         self.rsyncDestination = rsyncDestination
+
+    def googleUpload(self, filename, prefix):
+        prefixes = ["summit_imexam", "summit_specexam"]
+        if prefix not in prefixes:
+            print(f"Error: {prefix} not in {prefixes}")
+            return
+
+        path = Path(filename)
+        blob = self.bucket.blob("/".join([prefix, path.name]))
+        blob.upload_from_filename(filename)
 
     def _getLatestExpId(self):
         return sorted(self.butler.queryMetadata('raw', 'expId'))[-1]
@@ -193,8 +200,6 @@ class Monitor():
         else:
             nLoops = int(durationInSeconds//self.cadence)
 
-        pool = Pool(4)
-
         lastDisplayed = -1
         for i in range(nLoops):
             try:
@@ -224,13 +229,19 @@ class Monitor():
                 # run imexam here
                 if self.imExamOutputPath:
                     print('Running imexam...')
-                    args = _buildArgs(exp, dataId, self.imExamOutputPath, self.rsyncDestination)
-                    pool.starmap(runImExam, args)
+                    filename = runImExam(exp, dataId, self.imExamOutputPath)
+                    if filename:
+                        print("Uploading imExam to storage bucket")
+                        self.googleUpload(filename, 'summit_imexam')
+                        print('Upload complete')
 
-                    if isExpDispersed(exp):
+                    if isDispersedExp(exp):
                         print('Running spectrum summary...')
-                        args = _buildArgs(exp, dataId, self.imExamOutputPath, self.rsyncDestination)
-                        pool.starmap(runSpectrumSummary, args)
+                        filename = runSpectrumSummary(exp, dataId, self.imExamOutputPath)
+                        if filename:
+                            print("Uploading specExam to storage bucket")
+                            self.googleUpload(filename, 'summit_specexam')
+                            print('Upload complete')
 
                     print('Finished spawning sub-plotting')
 
