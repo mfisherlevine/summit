@@ -24,6 +24,7 @@ import numpy as np
 from multiprocessing import Pool
 
 import lsst.daf.persistence as dafPersist
+import lsst.afw.display as afwDisplay
 import lsst.afw.cameraGeom.utils as cgUtils
 from lsst.pex.exceptions import NotFoundError
 from lsst.rapid.analysis.bestEffort import BestEffortIsr
@@ -31,18 +32,20 @@ from lsst.rapid.analysis.imageExaminer import ImageExaminer
 from lsst.rapid.analysis.summarizeImage import SummarizeImage
 from lsst.rapid.analysis.utils import isExpDispersed
 
-import lsst.geom as geom
 from time import sleep
 
 # TODO: maybe add option to create display and return URL?
+
 
 # all things used by the pool workers live outside the class
 def _dataIdToFilename(prefix, dataId, outputRoot):
     filename = f"{prefix}_dayObs_{dataId['dayObs']}_seqNum_{dataId['seqNum']}.png"
     return os.path.join(outputRoot, filename)
 
+
 def _buildArgs(exp, dataId, outputRoot, rsyncDestination):
     return [(exp, dataId, outputRoot, rsyncDestination)]
+
 
 def _imExamine(exp, dataId, outputRoot):
     filename = _dataIdToFilename('imExam', dataId, outputRoot)
@@ -53,9 +56,11 @@ def _imExamine(exp, dataId, outputRoot):
     imexam.plot()
     return filename
 
+
 def _sendFile(filename, rsyncDestination):
     args = f'rsync {filename} {rsyncDestination}'
     os.system(args)
+
 
 def runImExam(exp, dataId, outputRoot, rsyncDestination):
     try:
@@ -64,7 +69,8 @@ def runImExam(exp, dataId, outputRoot, rsyncDestination):
         _sendFile(writtenFile, fullRsyncDest)
     except Exception as e:
         print(f"Skipped imExam on {dataId} because {e}")
-        
+
+
 def _spectrumSummarize(exp, dataId, outputRoot):
     filename = _dataIdToFilename('spectrumSummary', dataId, outputRoot)
     if os.path.exists(filename):
@@ -74,6 +80,7 @@ def _spectrumSummarize(exp, dataId, outputRoot):
     summary.run()
     return filename
 
+
 def runSpectrumSummary(exp, dataId, outputRoot, rsyncDestination):
     try:
         writtenFile = _spectrumSummarize(exp, dataId, outputRoot)
@@ -81,6 +88,7 @@ def runSpectrumSummary(exp, dataId, outputRoot, rsyncDestination):
         _sendFile(writtenFile, fullRsyncDest)
     except Exception as e:
         print(f"Skipped imExam on {dataId} because {e}")
+
 
 class Monitor():
     cadence = 1  # in seconds
@@ -103,7 +111,6 @@ class Monitor():
             assert imExamOutputPath != '', "Must provide output path when writing imExams"
         self.imExamOutputPath = imExamOutputPath
         self.rsyncDestination = rsyncDestination
-        
 
     def _getLatestExpId(self):
         return sorted(self.butler.queryMetadata('raw', 'expId'))[-1]
@@ -178,7 +185,6 @@ class Monitor():
             y = top - (i*vSpacing)
             x = xnom + (size * 18.5 * len(item)//2)
             self.display.dot(str(item), x, y, size, ctype='red', fontFamily="courier")
-            
 
     def run(self, durationInSeconds=-1):
 
@@ -186,7 +192,7 @@ class Monitor():
             nLoops = int(1e9)
         else:
             nLoops = int(durationInSeconds//self.cadence)
-            
+
         pool = Pool(4)
 
         lastDisplayed = -1
@@ -214,7 +220,7 @@ class Monitor():
 
                 self._printImageInfo(imageInfoText)
                 lastDisplayed = expId
-                
+
                 # run imexam here
                 if self.imExamOutputPath:
                     print('Running imexam...')
@@ -224,10 +230,10 @@ class Monitor():
                     if isExpDispersed(exp):
                         print('Running spectrum summary...')
                         args = _buildArgs(exp, dataId, self.imExamOutputPath, self.rsyncDestination)
-                        pool.starmap(runSpectrumSummary, args)    
-                        
+                        pool.starmap(runSpectrumSummary, args)
+
                     print('Finished spawning sub-plotting')
-                
+
                 if self.writeQuickLookImages:
                     print(f"Writing quickLookExp for {dataId}")
                     self.butler.put(exp, "quickLookExp", dataId)
@@ -236,16 +242,15 @@ class Monitor():
                 print(f'Skipped displaying {dataId} due to {e}')
         return
 
+
 if __name__ == '__main__':
     repoDir = '/project/shared/auxTel/'
     rsyncDestination = 'merlin@162.245.221.96:/data'
     imExamOutputPath = '/home/mfisherlevine/autoPlotting/'
 
-    import os
-    import lsst.afw.display as afwDisplay
     afwDisplay.setDefaultBackend('lsst.display.firefly')
     display1 = afwDisplay.getDisplay(frame=1, name='LATISS_monitor_background',
-                                     url=os.environ['FIREFLY_URL'])	
+                                     url=os.environ['FIREFLY_URL'])
 
     monitor = Monitor(repoDir, display1,
                       doWriteImExams=True,
