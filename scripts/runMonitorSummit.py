@@ -243,7 +243,7 @@ class Monitor():
                             self.googleUpload(filename, 'summit_specexam')
                             print('Upload complete')
 
-                    print('Finished spawning sub-plotting')
+                    print('Finished generating plots, waiting for next image...')
 
                 if self.writeQuickLookImages:
                     print(f"Writing quickLookExp for {dataId}")
