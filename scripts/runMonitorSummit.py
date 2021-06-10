@@ -20,14 +20,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import numpy as np
 from time import sleep
 from pathlib import Path
 from google.cloud import storage
 
 import lsst.daf.persistence as dafPersist
-import lsst.afw.display as afwDisplay
-import lsst.afw.cameraGeom.utils as cgUtils
 from lsst.pex.exceptions import NotFoundError
 from lsst.rapid.analysis.bestEffort import BestEffortIsr
 from lsst.rapid.analysis.imageExaminer import ImageExaminer
@@ -41,10 +38,6 @@ from lsst.atmospec.utils import isDispersedExp
 def _dataIdToFilename(prefix, dataId, outputRoot):
     filename = f"{prefix}_dayObs_{dataId['dayObs']}_seqNum_{dataId['seqNum']}.png"
     return os.path.join(outputRoot, filename)
-
-
-def _buildArgs(exp, dataId, outputRoot, rsyncDestination):
-    return [(exp, dataId, outputRoot, rsyncDestination)]
 
 
 def _imExamine(exp, dataId, outputRoot):
@@ -91,23 +84,18 @@ class Monitor():
     client = storage.Client()
     bucket = client.get_bucket('rubintv_data')
 
-    def __init__(self, repoDir, fireflyDisplay, doWriteImExams=False,
+    def __init__(self, repoDir, doWriteImExams=False,
                  imExamOutputPath='',
-                 rsyncDestination='',
                  **kwargs):
         """"""
         self.repoDir = repoDir
-        self.display = fireflyDisplay
         self.bestEffort = BestEffortIsr(repoDir, **kwargs)
-        self.writeQuickLookImages = None
         outpath = os.path.join(repoDir, 'rerun/quickLook')
         self.butler = dafPersist.Butler(outpath)
-        self.overlayAmps = False  # do the overlay?
         self.doWriteImExams = doWriteImExams
         if self.doWriteImExams:
             assert imExamOutputPath != '', "Must provide output path when writing imExams"
         self.imExamOutputPath = imExamOutputPath
-        self.rsyncDestination = rsyncDestination
 
     def googleUpload(self, filename, prefix):
         prefixes = ["summit_imexam", "summit_specexam"]
@@ -131,68 +119,6 @@ class Monitor():
         dataId = {'dayObs': dayObs, 'seqNum': seqNum}
         return dataId, expId
 
-    def _calcImageStats(self, exp):
-        elements = []
-        median = np.median(exp.image.array)
-        elements.append(f"Median={median:.2f}")
-        mean = np.mean(exp.image.array)
-        # elements.append(f"Median={median:.2f}")
-        elements.append(f"Mean={mean:.2f}")
-
-        return elements
-
-    def _makeImageInfoText(self, dataId, exp, asList=False):
-        # TODO: add the following to the display:
-        # az, el, zenith angle
-        # main source centroid
-        # PSF
-        # num saturated pixels (or maybe just an isSaturated bool)
-        # main star max ADU (post isr)
-
-        elements = []
-
-        imageType = self.butler.queryMetadata('raw', 'imageType', dataId)[0]
-        obj = None
-        if imageType.upper() not in ['BIAS', 'DARK', 'FLAT']:
-            try:
-                obj = self.butler.queryMetadata('raw', 'OBJECT', dataId)[0]
-                obj = obj.replace(' ', '')
-            except Exception:
-                pass
-
-        for k, v in dataId.items():  # dataId done per line for vertical display
-            elements.append(f"{k}:{v}")
-
-        if obj:
-            elements.append(f"{obj}")
-        else:
-            elements.append(f"{imageType}")
-
-        expTime = exp.getInfo().getVisitInfo().getExposureTime()
-        filt = exp.getFilter().getName()
-
-        elements.append(f"{expTime}s exp")
-        elements.append(f"{filt}")
-
-        elements.extend(self._calcImageStats(exp))
-
-        if asList:
-            return elements
-        return " ".join([e for e in elements])
-
-    def _printImageInfo(self, elements):
-        size = 3
-        top = 3850  # just under title for size=3
-        xnom = -600  # 0 is the left edge of the image
-        vSpacing = 100  # about right for size=3, can make f(size) if needed
-
-        # TODO: add a with buffering and a .flush()
-        # Also maybe a sleep as it seems buggy
-        for i, item in enumerate(elements):
-            y = top - (i*vSpacing)
-            x = xnom + (size * 18.5 * len(item)//2)
-            self.display.dot(str(item), x, y, size, ctype='red', fontFamily="courier")
-
     def run(self, durationInSeconds=-1):
 
         if durationInSeconds == -1:
@@ -214,16 +140,6 @@ class Monitor():
                 else:
                     exp = self.butler.get('raw', **dataId)
 
-                print(f"Displaying {dataId}...")
-                imageInfoText = self._makeImageInfoText(dataId, exp, asList=True)
-                # too long of a title breaks Java FITS i/o
-                fireflyTitle = " ".join([s for s in imageInfoText])[:67]
-                self.display.scale('asinh', 'zscale')
-                self.display.mtv(exp, title=fireflyTitle)
-                if self.overlayAmps:
-                    cgUtils.overlayCcdBoxes(exp.getDetector(), display=self.display, isTrimmed=True)
-
-                self._printImageInfo(imageInfoText)
                 lastDisplayed = expId
 
                 # run imexam here
@@ -245,10 +161,6 @@ class Monitor():
 
                     print('Finished generating plots, waiting for next image...')
 
-                if self.writeQuickLookImages:
-                    print(f"Writing quickLookExp for {dataId}")
-                    self.butler.put(exp, "quickLookExp", dataId)
-
             except NotFoundError as e:  # NotFoundError when filters aren't defined
                 print(f'Skipped displaying {dataId} due to {e}')
         return
@@ -256,16 +168,9 @@ class Monitor():
 
 if __name__ == '__main__':
     repoDir = '/project/shared/auxTel/'
-    rsyncDestination = 'merlin@162.245.221.96:/data'
     imExamOutputPath = '/home/mfisherlevine/autoPlotting/'
 
-    afwDisplay.setDefaultBackend('lsst.display.firefly')
-    display1 = afwDisplay.getDisplay(frame=1, name='LATISS_monitor_background',
-                                     url=os.environ['FIREFLY_URL'])
-
-    monitor = Monitor(repoDir, display1,
+    monitor = Monitor(repoDir,
                       doWriteImExams=True,
-                      imExamOutputPath=imExamOutputPath,
-                      rsyncDestination=rsyncDestination)
-    monitor.writeQuickLookImages = False
+                      imExamOutputPath=imExamOutputPath)
     monitor.run()
